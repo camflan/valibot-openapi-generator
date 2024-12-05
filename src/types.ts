@@ -1,6 +1,6 @@
 import type { OpenAPIV3 } from "openapi-types";
 
-import type { ALLOWED_METHODS } from "./helper.ts";
+import type { AllowedMethod } from "./helper.ts";
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
@@ -51,7 +51,7 @@ export interface OpenAPIRoute {
   data:
     | DescribeRouteOptions
     | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
-  method: (typeof ALLOWED_METHODS)[number];
+  method: AllowedMethod;
   path: string;
 }
 
@@ -82,7 +82,7 @@ export type OpenApiSpecsOptions = {
   /**
    * Exclude methods from Open API
    */
-  excludeMethods?: (typeof ALLOWED_METHODS)[number][];
+  excludeMethods?: AllowedMethod[number][];
 
   /**
    * Determine if Swagger should exclude static files.
