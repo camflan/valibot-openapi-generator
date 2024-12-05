@@ -1,10 +1,20 @@
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
 import { resolver } from "./valibot";
 
+type DescribedRoute = {
+  path: string;
+  method: DescribeRouteOptions["method"];
+  metadata: Record<string, string>;
+  resolver: (config: OpenAPIRouteHandlerConfig) => Promise<{
+    docs: unknown;
+    components: unknown;
+  }>;
+};
+
 export function describeRoute(
   path: string,
   { method, ...specs }: DescribeRouteOptions,
-) {
+): DescribedRoute {
   return {
     path,
     method,
@@ -41,7 +51,7 @@ export function describeRoute(
 
       return { docs, components };
     },
-  } as const;
+  };
 }
 
-export type DescribedRoute = ReturnType<typeof describeRoute>;
+// export type DescribedRoute = ReturnType<typeof describeRoute>;

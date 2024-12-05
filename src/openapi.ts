@@ -26,7 +26,7 @@ export function openAPISpecs(
     excludeMethods: ["OPTIONS"],
     excludeTags: [],
   },
-) {
+): () => Promise<OpenAPIV3.Document> {
   const config: OpenAPIRouteHandlerConfig = {
     version: "3.1.0",
     components: {},
@@ -83,7 +83,9 @@ export function openAPISpecs(
     // Hide routes
     for (const path in schema) {
       for (const method in schema[path]) {
+        // @ts-expect-error
         if (schema[path][method]?.hide) {
+          // @ts-expect-error
           delete schema[path][method];
         }
       }
