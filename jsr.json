@@ -1,7 +1,0 @@
-{
-  "name": "@camflan/valibot-openapi-generator",
-  "version": "2024.12.1",
-  "exports": {
-    ".": "./src/public.ts"
-  }
-}
