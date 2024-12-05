@@ -9,6 +9,25 @@ import type { OpenAPIV3 } from "openapi-types";
 import { allowedKeywords } from "./const";
 import type { Options, SchemaType, SchemaTypeKeys } from "./types";
 
+export async function convert<T extends object = JSONSchema4>(
+  schema: T,
+  options?: Options,
+): Promise<OpenAPIV3.Document> {
+  const walker = new Walker<T>();
+  const convertDefs = options?.convertUnreferencedDefinitions ?? true;
+  await walker.loadSchema(schema, options);
+  await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
+  // if we want to convert unreferenced definitions, we need to do it iteratively here
+  const rootSchema = walker.rootSchema as unknown as JSONSchema;
+  if (convertDefs && rootSchema?.definitions) {
+    for (const defName in rootSchema.definitions) {
+      const def = rootSchema.definitions[defName];
+      rootSchema.definitions[defName] = await handleDefinition(def, schema);
+    }
+  }
+  return rootSchema as OpenAPIV3.Document;
+}
+
 class InvalidTypeError extends Error {
   constructor(message: string) {
     super(message);
@@ -19,10 +38,10 @@ class InvalidTypeError extends Error {
 
 const oasExtensionPrefix = "x-";
 
-const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
+async function handleDefinition<T extends JSONSchema4 = JSONSchema4>(
   def: JSONSchema7Definition | JSONSchema6Definition | JSONSchema4,
   schema: T,
-) => {
+) {
   if (typeof def !== "object") {
     return def;
   }
@@ -69,26 +88,7 @@ const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
   }
 
   return def;
-};
-
-const convert = async <T extends object = JSONSchema4>(
-  schema: T,
-  options?: Options,
-): Promise<OpenAPIV3.Document> => {
-  const walker = new Walker<T>();
-  const convertDefs = options?.convertUnreferencedDefinitions ?? true;
-  await walker.loadSchema(schema, options);
-  await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
-  // if we want to convert unreferenced definitions, we need to do it iteratively here
-  const rootSchema = walker.rootSchema as unknown as JSONSchema;
-  if (convertDefs && rootSchema?.definitions) {
-    for (const defName in rootSchema.definitions) {
-      const def = rootSchema.definitions[defName];
-      rootSchema.definitions[defName] = await handleDefinition(def, schema);
-    }
-  }
-  return rootSchema as OpenAPIV3.Document;
-};
+}
 
 function stripIllegalKeywords(schema: SchemaType) {
   if (typeof schema !== "object") {
@@ -183,6 +183,7 @@ function convertDependencies(schema: SchemaType) {
   //
 
   schema.dependencies = undefined;
+
   if (!Array.isArray(schema.allOf)) {
     schema.allOf = [];
   }
@@ -345,5 +346,3 @@ function rewriteExclusiveMinMax(schema: SchemaType) {
   }
   return schema;
 }
-
-export default convert;

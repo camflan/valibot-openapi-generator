@@ -1,4 +1,4 @@
-import convert from "./toOpenAPISchema";
+import { convert } from "./toOpenAPISchema";
 import { toJsonSchema } from "@valibot/to-json-schema";
 import type { ValidationTargets } from "hono";
 import {
@@ -15,10 +15,12 @@ export function resolver<
   T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: T): ResolverResult {
   return {
-    builder: async (options?: OpenAPIRouteHandlerConfig) => ({
-      schema: await convert(toJsonSchema(schema)),
-    }),
-    validator: async (value) => {
+    async builder() {
+      return {
+        schema: await convert(toJsonSchema(schema)),
+      };
+    },
+    async validator(value) {
       await parseAsync(schema, value);
     },
   };
