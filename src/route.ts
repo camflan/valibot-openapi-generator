@@ -1,13 +1,15 @@
-import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { resolver } from "./valibot";
+import type {
+  DescribeRouteOptions,
+  OpenAPIRouteHandlerConfig,
+} from "./types.ts";
 
-type DescribedRoute = {
-  path: string;
-  method: DescribeRouteOptions["method"];
+export type DescribedRoute = {
   metadata: Record<string, string>;
+  method: DescribeRouteOptions["method"];
+  path: string;
   resolver: (config: OpenAPIRouteHandlerConfig) => Promise<{
-    docs: unknown;
     components: unknown;
+    docs: unknown;
   }>;
 };
 
@@ -16,9 +18,9 @@ export function describeRoute(
   { method, ...specs }: DescribeRouteOptions,
 ): DescribedRoute {
   return {
-    path,
-    method,
     metadata: {},
+    method,
+    path,
     async resolver(config: OpenAPIRouteHandlerConfig) {
       const docs = { ...specs };
       let components = {};
@@ -28,16 +30,16 @@ export function describeRoute(
           const response = docs.responses[key];
           if (response && !("content" in response)) continue;
 
-          for (const contentKey of Object.keys(response.content ?? {})) {
-            const raw = response.content?.[contentKey];
-
+          for (const [, raw] of Object.entries(
+            "content" in response ? response.content : {},
+          )) {
             if (!raw) continue;
 
-            if (raw.schema) {
-              // @ts-expect-error
-              const withResolver = resolver(raw.schema);
-              const result = await withResolver.builder(config);
+            if (raw.schema && "builder" in raw.schema) {
+              const result = await raw.schema.builder(config);
+
               raw.schema = result.schema;
+
               if (result.components) {
                 components = {
                   ...components,
@@ -49,9 +51,7 @@ export function describeRoute(
         }
       }
 
-      return { docs, components };
+      return { components, docs };
     },
   };
 }
-
-// export type DescribedRoute = ReturnType<typeof describeRoute>;

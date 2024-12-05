@@ -1,6 +1,7 @@
 import type { ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
-import type { ResolverResult } from "./types";
+
+import type { ResolverResult } from "./types.ts";
 
 export const uniqueSymbol = Symbol("openapi");
 
@@ -23,8 +24,8 @@ export async function generateValidatorDocs<
     };
   } else {
     const parameters: (
-      | OpenAPIV3.ReferenceObject
       | OpenAPIV3.ParameterObject
+      | OpenAPIV3.ReferenceObject
     )[] = [];
 
     if ("$ref" in result.schema) {
@@ -40,8 +41,8 @@ export async function generateValidatorDocs<
         parameters.push({
           in: target,
           name: key,
-          schema: value,
           required: result.schema.required?.includes(key),
+          schema: value,
         });
       }
     }
@@ -49,5 +50,5 @@ export async function generateValidatorDocs<
     docs.parameters = parameters;
   }
 
-  return { docs, components: result.components };
+  return { components: result.components, docs };
 }

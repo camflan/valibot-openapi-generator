@@ -1,12 +1,13 @@
 import type { OpenAPIV3 } from "openapi-types";
-import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
-import type { DescribedRoute } from "./route";
+
+import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper.ts";
+import type { DescribedRoute } from "./route.ts";
 import type {
   HandlerResponse,
   OpenAPIRoute,
   OpenAPIRouteHandlerConfig,
   OpenApiSpecsOptions,
-} from "./types";
+} from "./types.ts";
 
 const DEFAULT_TITLE = "Valibot schema documentation";
 const DEFAULT_DESCRIPTION = "Development documentation";
@@ -15,31 +16,30 @@ export function openAPISpecs(
   routes: DescribedRoute[],
   {
     documentation = {},
-    excludeStaticFile = true,
     exclude = [],
     excludeMethods = ["OPTIONS"],
+    excludeStaticFile = true,
     excludeTags = [],
   }: OpenApiSpecsOptions = {
     documentation: {},
-    excludeStaticFile: true,
     exclude: [],
     excludeMethods: ["OPTIONS"],
+    excludeStaticFile: true,
     excludeTags: [],
   },
 ): () => Promise<OpenAPIV3.Document> {
   const config: OpenAPIRouteHandlerConfig = {
-    version: "3.1.0",
     components: {},
+    version: "3.1.0",
   };
   const schema: OpenAPIV3.PathsObject = {};
 
-  let specs: OpenAPIV3.Document | null = null;
+  const specs: null | OpenAPIV3.Document = null;
 
   return async () => {
     for await (const route of routes) {
       // Exclude methods
       if ((excludeMethods as ReadonlyArray<string>).includes(route.method)) {
-        console.log(`Excluding [${route.method}]: ${route.path}`);
         continue;
       }
 
@@ -49,12 +49,11 @@ export function openAPISpecs(
           false &&
         route.method !== "ALL"
       ) {
-        console.log(`Excluding [${route.method}]: ${route.path}`);
         continue;
       }
 
-      const { resolver, metadata = {} } = route as HandlerResponse;
-      const { docs, components } = await resolver({ ...config, ...metadata });
+      const { metadata = {}, resolver } = route as HandlerResponse;
+      const { components, docs } = await resolver({ ...config, ...metadata });
 
       config.components = {
         ...config.components,
@@ -64,17 +63,17 @@ export function openAPISpecs(
       if (route.method === "ALL") {
         for (const method of ALLOWED_METHODS) {
           registerSchemaPath({
-            path: route.path,
             data: docs,
             method,
+            path: route.path,
             schema,
           });
         }
       } else {
         registerSchemaPath({
+          data: docs,
           method: route.method as OpenAPIRoute["method"],
           path: route.path,
-          data: docs,
           schema,
         });
       }
@@ -83,34 +82,17 @@ export function openAPISpecs(
     // Hide routes
     for (const path in schema) {
       for (const method in schema[path]) {
-        // @ts-expect-error
-        if (schema[path][method]?.hide) {
-          // @ts-expect-error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if ("hide" in schema[path][method] && schema[path][method]?.hide) {
           delete schema[path][method];
         }
       }
     }
 
-    specs = {
+    return {
       openapi: config.version,
       ...{
         ...documentation,
-        tags: documentation.tags?.filter(
-          (tag) => !excludeTags?.includes(tag?.name),
-        ),
-        info: {
-          title: DEFAULT_TITLE,
-          description: DEFAULT_DESCRIPTION,
-          version: "0.0.0",
-          ...documentation.info,
-        },
-        paths: {
-          ...filterPaths(schema, {
-            excludeStaticFile,
-            exclude: Array.isArray(exclude) ? exclude : [exclude],
-          }),
-          ...documentation.paths,
-        },
         components: {
           ...documentation.components,
           schemas: {
@@ -118,9 +100,23 @@ export function openAPISpecs(
             ...documentation.components?.schemas,
           },
         },
+        info: {
+          description: DEFAULT_DESCRIPTION,
+          title: DEFAULT_TITLE,
+          version: "0.0.0",
+          ...documentation.info,
+        },
+        paths: {
+          ...filterPaths(schema, {
+            exclude: Array.isArray(exclude) ? exclude : [exclude],
+            excludeStaticFile,
+          }),
+          ...documentation.paths,
+        },
+        tags: documentation.tags?.filter(
+          (tag) => !excludeTags?.includes(tag?.name),
+        ),
       },
     } satisfies OpenAPIV3.Document;
-
-    return specs;
   };
 }

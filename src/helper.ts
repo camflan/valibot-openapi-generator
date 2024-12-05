@@ -1,5 +1,6 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { OpenAPIRoute } from "./types";
+
+import type { OpenAPIRoute } from "./types.ts";
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -12,8 +13,10 @@ export const ALLOWED_METHODS = [
   "TRACE",
 ] as const;
 
-export const toOpenAPIPath = (path: string) =>
-  path
+export type AllowedMethod = (typeof ALLOWED_METHODS)[number];
+
+export function toOpenAPIPath(path: string) {
+  return path
     .split("/")
     .map((x) => {
       let tmp = x;
@@ -26,11 +29,85 @@ export const toOpenAPIPath = (path: string) =>
       return tmp;
     })
     .join("/");
+}
 
 export const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
-export const generateOperationId = (method: string, paths: string) => {
+export function filterPaths(
+  paths: OpenAPIV3.PathsObject,
+  {
+    exclude = [],
+    excludeStaticFile = true,
+  }: {
+    exclude: (RegExp | string)[];
+    excludeStaticFile: boolean;
+  },
+) {
+  const newPaths: OpenAPIV3.PathsObject = {};
+
+  for (const [key, value] of Object.entries(paths)) {
+    if (
+      !exclude.some((x) => {
+        if (typeof x === "string") return key === x;
+
+        return x.test(key);
+      }) &&
+      !key.includes("*") &&
+      (excludeStaticFile ? !key.includes(".") : true)
+    ) {
+      for (const method of Object.keys(value)) {
+        const schema = value[method as keyof typeof value];
+
+        if (typeof schema === "string") {
+          console.error("invalid schema type?", schema);
+          continue;
+        }
+
+        // TODO: Do we need to support this?
+        // If so we need to resolve types
+        //
+        //   if (key.includes("{")) {
+        //     if (!schema.parameters) {
+        //       schema.parameters = [];
+        //     }
+        //
+        //     schema.parameters = [
+        //       ...key
+        //         .split("/")
+        //         .filter(
+        //           (x) =>
+        //             x.startsWith("{") &&
+        //             !schema.parameters.find(
+        //               (params: Record<string, unknown>) =>
+        //                 params["in"] === "path" &&
+        //                 params["name"] === x.slice(1, x.length - 1),
+        //             ),
+        //         )
+        //         .map((x) => ({
+        //           in: "path",
+        //           name: x.slice(1, x.length - 1),
+        //           required: true,
+        //           schema: { type: "string" },
+        //         })),
+        //       ...schema.parameters,
+        //     ];
+        //   }
+        //
+        //   if (!schema.responses)
+        //     schema.responses = {
+        //       200: {},
+        //     };
+      }
+
+      newPaths[key] = value;
+    }
+  }
+
+  return newPaths;
+}
+
+export function generateOperationId(method: string, paths: string) {
   let operationId = method;
 
   if (paths === "/") return `${operationId}Index`;
@@ -44,12 +121,12 @@ export const generateOperationId = (method: string, paths: string) => {
   }
 
   return operationId;
-};
+}
 
 export function registerSchemaPath({
-  path,
-  method: _method,
   data,
+  method: _method,
+  path,
   schema,
 }: OpenAPIRoute & {
   schema: Partial<OpenAPIV3.PathsObject>;
@@ -66,69 +143,4 @@ export function registerSchemaPath({
       ...data,
     } satisfies OpenAPIV3.OperationObject,
   };
-}
-
-export function filterPaths(
-  paths: OpenAPIV3.PathsObject,
-  {
-    excludeStaticFile = true,
-    exclude = [],
-  }: {
-    excludeStaticFile: boolean;
-    exclude: (string | RegExp)[];
-  },
-) {
-  const newPaths: OpenAPIV3.PathsObject = {};
-
-  for (const [key, value] of Object.entries(paths)) {
-    if (
-      !exclude.some((x) => {
-        if (typeof x === "string") return key === x;
-
-        return x.test(key);
-      }) &&
-      !key.includes("*") &&
-      (excludeStaticFile ? !key.includes(".") : true)
-    ) {
-      // @ts-expect-error
-      for (const method of Object.keys(value)) {
-        // @ts-expect-error
-        const schema = value[method];
-
-        if (key.includes("{")) {
-          if (!schema.parameters) schema.parameters = [];
-
-          schema.parameters = [
-            ...key
-              .split("/")
-              .filter(
-                (x) =>
-                  x.startsWith("{") &&
-                  !schema.parameters.find(
-                    (params: Record<string, unknown>) =>
-                      params.in === "path" &&
-                      params.name === x.slice(1, x.length - 1),
-                  ),
-              )
-              .map((x) => ({
-                schema: { type: "string" },
-                in: "path",
-                name: x.slice(1, x.length - 1),
-                required: true,
-              })),
-            ...schema.parameters,
-          ];
-        }
-
-        if (!schema.responses)
-          schema.responses = {
-            200: {},
-          };
-      }
-
-      newPaths[key] = value;
-    }
-  }
-
-  return newPaths;
 }

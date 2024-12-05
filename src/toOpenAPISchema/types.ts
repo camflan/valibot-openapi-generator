@@ -9,14 +9,17 @@ export type addPrefixToObject = {
 
 export interface Options {
   cloneSchema?: boolean;
-  dereference?: boolean;
   convertUnreferencedDefinitions?: boolean;
+  dereference?: boolean;
   dereferenceOptions?: ParserOptions | undefined;
 }
-type ExtendedJSONSchema = addPrefixToObject & JSONSchema;
+
 export type SchemaType = ExtendedJSONSchema & {
   example?: JSONSchema["examples"][number];
-  "x-patternProperties"?: JSONSchema["patternProperties"];
   nullable?: boolean;
+  "x-patternProperties"?: JSONSchema["patternProperties"];
 };
+
 export type SchemaTypeKeys = keyof SchemaType;
+
+type ExtendedJSONSchema = addPrefixToObject & JSONSchema;

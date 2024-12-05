@@ -1,58 +1,24 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./helper";
 
-export type HasUndefined<T> = undefined extends T ? true : false;
-export type PromiseOr<T> = T | Promise<T>;
-
-export interface RouterRoute {
-  path: string;
-  method: string;
-  // handler: H;
-}
-
-export type OpenAPIRouteHandlerConfig = {
-  version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
-  components: OpenAPIV3.ComponentsObject["schemas"];
-} & { [key: string]: unknown };
-
-export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<{
-    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  }>;
-  validator: (values: unknown) => PromiseOr<void>;
-};
-
-export type HandlerResponse = {
-  resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{
-    docs: OpenAPIV3.OperationObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  }>;
-  metadata?: Record<string, unknown>;
-};
+import type { ALLOWED_METHODS } from "./helper.ts";
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
-  "responses" | "requestBody" | "parameters"
+  "parameters" | "requestBody" | "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
   hide?: boolean;
 
-  method: OpenAPIRoute["method"] | "ALL";
-
-  /**
-   * Validate response of the route
-   * @experimental
-   */
-  validateResponse?: boolean;
+  method: "ALL" | OpenAPIRoute["method"];
 
   /**
    * Responses of the request
    */
   responses?: {
     [key: string]:
+      | OpenAPIV3.ReferenceObject
       | (OpenAPIV3.ResponseObject & {
           content?: {
             [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
@@ -62,18 +28,37 @@ export type DescribeRouteOptions = Omit<
                 | ResolverResult;
             };
           };
-        })
-      | OpenAPIV3.ReferenceObject;
+        });
   };
+
+  /**
+   * Validate response of the route
+   * @experimental
+   */
+  validateResponse?: boolean;
+};
+export type HandlerResponse = {
+  metadata?: Record<string, unknown>;
+  resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{
+    components?: OpenAPIV3.ComponentsObject["schemas"];
+    docs: OpenAPIV3.OperationObject;
+  }>;
 };
 
+export type HasUndefined<T> = undefined extends T ? true : false;
+
 export interface OpenAPIRoute {
-  path: string;
-  method: (typeof ALLOWED_METHODS)[number];
   data:
     | DescribeRouteOptions
     | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
+  method: (typeof ALLOWED_METHODS)[number];
+  path: string;
 }
+
+export type OpenAPIRouteHandlerConfig = { [key: string]: unknown } & {
+  components: OpenAPIV3.ComponentsObject["schemas"];
+  version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
+};
 
 export type OpenApiSpecsOptions = {
   /**
@@ -88,18 +73,11 @@ export type OpenApiSpecsOptions = {
   >;
 
   /**
-   * Determine if Swagger should exclude static files.
-   *
-   * @default true
-   */
-  excludeStaticFile?: boolean;
-
-  /**
    * Paths to exclude from OpenAPI endpoint
    *
    * @default []
    */
-  exclude?: string | RegExp | Array<string | RegExp>;
+  exclude?: Array<RegExp | string> | RegExp | string;
 
   /**
    * Exclude methods from Open API
@@ -107,7 +85,24 @@ export type OpenApiSpecsOptions = {
   excludeMethods?: (typeof ALLOWED_METHODS)[number][];
 
   /**
+   * Determine if Swagger should exclude static files.
+   *
+   * @default true
+   */
+  excludeStaticFile?: boolean;
+
+  /**
    * Exclude tags from OpenAPI
    */
   excludeTags?: string[];
+};
+
+export type PromiseOr<T> = Promise<T> | T;
+
+export type ResolverResult = {
+  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<{
+    components?: OpenAPIV3.ComponentsObject["schemas"];
+    schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject;
+  }>;
+  validator: (values: unknown) => PromiseOr<void>;
 };

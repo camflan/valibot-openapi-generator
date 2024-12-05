@@ -6,8 +6,17 @@ import type {
 } from "json-schema";
 import { Walker } from "json-schema-walker";
 import type { OpenAPIV3 } from "openapi-types";
-import { allowedKeywords } from "./const";
-import type { Options, SchemaType, SchemaTypeKeys } from "./types";
+
+import { allowedKeywords } from "./constants.ts";
+import type { Options, SchemaType, SchemaTypeKeys } from "./types.ts";
+
+class InvalidTypeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidTypeError";
+    this.message = message;
+  }
+}
 
 export async function convert<T extends object = JSONSchema4>(
   schema: T,
@@ -28,79 +37,7 @@ export async function convert<T extends object = JSONSchema4>(
   return rootSchema as OpenAPIV3.Document;
 }
 
-class InvalidTypeError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidTypeError";
-    this.message = message;
-  }
-}
-
 const oasExtensionPrefix = "x-";
-
-async function handleDefinition<T extends JSONSchema4 = JSONSchema4>(
-  def: JSONSchema7Definition | JSONSchema6Definition | JSONSchema4,
-  schema: T,
-) {
-  if (typeof def !== "object") {
-    return def;
-  }
-
-  const type = def.type;
-  if (type) {
-    // Walk just the definitions types
-    const walker = new Walker<T>();
-    await walker.loadSchema(
-      {
-        definitions: schema.definitions || [],
-        ...def,
-        $schema: schema.$schema,
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      } as any,
-      {
-        dereference: true,
-        cloneSchema: true,
-        dereferenceOptions: {
-          dereference: {
-            circular: "ignore",
-          },
-        },
-      },
-    );
-    await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
-    if ("definitions" in walker.rootSchema) {
-      walker.rootSchema.definitions = undefined;
-    }
-    return walker.rootSchema;
-  }
-  if (Array.isArray(def)) {
-    // if it's an array, we might want to reconstruct the type;
-    const typeArr = def;
-    const hasNull = typeArr.includes("null");
-    if (hasNull) {
-      const actualTypes = typeArr.filter((l) => l !== "null");
-      return {
-        type: actualTypes.length === 1 ? actualTypes[0] : actualTypes,
-        nullable: true,
-        // this is incorrect but thats ok, we are in the inbetween phase here
-      } as JSONSchema7Definition | JSONSchema6Definition | JSONSchema4;
-    }
-  }
-
-  return def;
-}
-
-function stripIllegalKeywords(schema: SchemaType) {
-  if (typeof schema !== "object") {
-    return schema;
-  }
-  schema.$schema = undefined;
-  schema.$id = undefined;
-  if ("id" in schema) {
-    schema.id = undefined;
-  }
-  return schema;
-}
 
 function convertSchema(schema?: SchemaType) {
   let _schema = schema;
@@ -131,34 +68,80 @@ function convertSchema(schema?: SchemaType) {
   return _schema;
 }
 
-const validTypes = new Set([
-  "null",
-  "boolean",
-  "object",
-  "array",
-  "number",
-  "string",
-  "integer",
-]);
+async function handleDefinition<T extends JSONSchema4 = JSONSchema4>(
+  def: JSONSchema4 | JSONSchema6Definition | JSONSchema7Definition,
+  schema: T,
+) {
+  if (typeof def !== "object") {
+    return def;
+  }
 
-function validateType(type: unknown) {
-  if (typeof type === "object" && !Array.isArray(type)) {
-    // Refs are allowed because they fix circular references
-    if (type && "$ref" in type && type.$ref) {
-      return;
+  const type = def.type;
+  if (type) {
+    // Walk just the definitions types
+    const walker = new Walker<T>();
+    await walker.loadSchema(
+      {
+        definitions: schema.definitions || [],
+        ...def,
+        $schema: schema.$schema,
+      } as T,
+      {
+        cloneSchema: true,
+        dereference: true,
+        dereferenceOptions: {
+          dereference: {
+            circular: "ignore",
+          },
+        },
+      },
+    );
+    await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
+    if ("definitions" in walker.rootSchema) {
+      walker.rootSchema.definitions = undefined;
     }
-    // this is a de-referenced circular ref
-    if (type && "properties" in type && type.properties) {
-      return;
+    return walker.rootSchema;
+  }
+
+  if (Array.isArray(def)) {
+    // if it's an array, we might want to reconstruct the type;
+    const typeArr = def;
+    const hasNull = typeArr.includes("null");
+
+    if (hasNull) {
+      const actualTypes = typeArr.filter((l) => l !== "null");
+      return {
+        nullable: true,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        type: actualTypes.length === 1 ? actualTypes[0] : actualTypes,
+      } as JSONSchema4 | JSONSchema6Definition | JSONSchema7Definition;
     }
   }
-  const types = Array.isArray(type) ? type : [type];
 
-  for (const type of types) {
-    if (type && !validTypes.has(type))
-      throw new InvalidTypeError(`Type "${type}" is not a valid type`);
-  }
+  return def;
 }
+
+function stripIllegalKeywords(schema: SchemaType) {
+  if (typeof schema !== "object") {
+    return schema;
+  }
+  schema.$schema = undefined;
+  schema.$id = undefined;
+  if ("id" in schema) {
+    schema.id = undefined;
+  }
+  return schema;
+}
+
+const validTypes = new Set([
+  "array",
+  "boolean",
+  "integer",
+  "null",
+  "number",
+  "object",
+  "string",
+]);
 
 function convertDependencies(schema: SchemaType) {
   const deps = schema.dependencies;
@@ -206,6 +189,37 @@ function convertDependencies(schema: SchemaType) {
   return schema;
 }
 
+function convertExamples(schema: SchemaType) {
+  if (schema.examples && Array.isArray(schema.examples)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    schema.example = schema.examples[0];
+    schema.examples = undefined;
+  }
+
+  return schema;
+}
+
+// keywords (or property names) that are not recognized within OAS3 are rewritten into extensions.
+function convertIllegalKeywordsAsExtensions(schema: SchemaType) {
+  const keys = Object.keys(schema) as SchemaTypeKeys[];
+
+  for (const keyword of keys) {
+    if (
+      !keyword.startsWith(oasExtensionPrefix) &&
+      !allowedKeywords.includes(keyword)
+    ) {
+      const key = `${oasExtensionPrefix}${keyword}` as keyof SchemaType;
+      // @ts-expect-error: PRs welcome to tidy up these types
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      schema[key] = schema[keyword];
+      // @ts-expect-error: PRs welcome to tidy up these types
+      schema[keyword] = undefined;
+    }
+  }
+
+  return schema;
+}
+
 function convertNullable(schema: SchemaType) {
   for (const key of ["oneOf", "anyOf"] as const) {
     const schemas = schema[key] as JSONSchema4[];
@@ -229,6 +243,15 @@ function convertNullable(schema: SchemaType) {
     schema[key] = filtered;
   }
 
+  return schema;
+}
+
+// "patternProperties did not make it into OpenAPI v3.0"
+// https://github.com/OAI/OpenAPI-Specification/issues/687
+function convertPatternProperties(schema: SchemaType) {
+  schema["x-patternProperties"] = schema.patternProperties;
+  schema.patternProperties = undefined;
+  schema.additionalProperties ??= true;
   return schema;
 }
 
@@ -263,47 +286,25 @@ function convertTypes(schema: SchemaType) {
   return schema;
 }
 
-// "patternProperties did not make it into OpenAPI v3.0"
-// https://github.com/OAI/OpenAPI-Specification/issues/687
-function convertPatternProperties(schema: SchemaType) {
-  schema["x-patternProperties"] = schema.patternProperties;
-  schema.patternProperties = undefined;
-  schema.additionalProperties ??= true;
-  return schema;
-}
-
-// keywords (or property names) that are not recognized within OAS3 are rewritten into extensions.
-function convertIllegalKeywordsAsExtensions(schema: SchemaType) {
-  const keys = Object.keys(schema) as SchemaTypeKeys[];
-
-  for (const keyword of keys) {
-    if (
-      !keyword.startsWith(oasExtensionPrefix) &&
-      !allowedKeywords.includes(keyword)
-    ) {
-      const key = `${oasExtensionPrefix}${keyword}` as keyof SchemaType;
-      schema[key] = schema[keyword];
-      schema[keyword] = undefined;
-    }
-  }
-
-  return schema;
-}
-
-function convertExamples(schema: SchemaType) {
-  if (schema.examples && Array.isArray(schema.examples)) {
-    schema.example = schema.examples[0];
-    schema.examples = undefined;
-  }
-
-  return schema;
-}
-
 function rewriteConst(schema: SchemaType) {
   if (Object.hasOwnProperty.call(schema, "const")) {
     schema.enum = [schema.const];
     schema.const = undefined;
   }
+  return schema;
+}
+
+function rewriteExclusiveMinMax(schema: SchemaType) {
+  if (typeof schema.exclusiveMaximum === "number") {
+    schema.maximum = schema.exclusiveMaximum;
+    (schema as unknown as JSONSchema4).exclusiveMaximum = true;
+  }
+
+  if (typeof schema.exclusiveMinimum === "number") {
+    schema.minimum = schema.exclusiveMinimum;
+    (schema as unknown as JSONSchema4).exclusiveMinimum = true;
+  }
+
   return schema;
 }
 
@@ -325,24 +326,31 @@ function rewriteIfThenElse(schema: SchemaType) {
   if ("if" in schema && schema.if && schema.then) {
     schema.oneOf = [
       { allOf: [schema.if, schema.then].filter(Boolean) },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       { allOf: [{ not: schema.if }, schema.else].filter(Boolean) },
     ];
     schema.if = undefined;
-    // biome-ignore lint/suspicious/noThenProperty: <explanation>
     schema.then = undefined;
     schema.else = undefined;
   }
   return schema;
 }
 
-function rewriteExclusiveMinMax(schema: SchemaType) {
-  if (typeof schema.exclusiveMaximum === "number") {
-    schema.maximum = schema.exclusiveMaximum;
-    (schema as JSONSchema4).exclusiveMaximum = true;
+function validateType(type: unknown) {
+  if (typeof type === "object" && !Array.isArray(type)) {
+    // Refs are allowed because they fix circular references
+    if (type && "$ref" in type && type.$ref) {
+      return;
+    }
+    // this is a de-referenced circular ref
+    if (type && "properties" in type && type.properties) {
+      return;
+    }
   }
-  if (typeof schema.exclusiveMinimum === "number") {
-    schema.minimum = schema.exclusiveMinimum;
-    (schema as JSONSchema4).exclusiveMinimum = true;
+  const types = Array.isArray(type) ? type : [type];
+
+  for (const type of types) {
+    if (type && (typeof type !== "string" || !validTypes.has(type)))
+      throw new InvalidTypeError(`Type "${type}" is not a valid type`);
   }
-  return schema;
 }

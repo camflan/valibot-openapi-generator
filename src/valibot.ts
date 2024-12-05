@@ -1,4 +1,3 @@
-import { convert } from "./toOpenAPISchema";
 import { toJsonSchema } from "@valibot/to-json-schema";
 import type { ValidationTargets } from "hono";
 import {
@@ -8,8 +7,10 @@ import {
   type GenericSchemaAsync,
   parseAsync,
 } from "valibot";
-import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types";
-import { generateValidatorDocs } from "./utils";
+
+import { convert } from "./toOpenAPISchema/index.ts";
+import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types.ts";
+import { generateValidatorDocs } from "./utils.ts";
 
 export function resolver<
   T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
