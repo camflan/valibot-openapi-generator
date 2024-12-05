@@ -4,7 +4,8 @@ import { main } from "../src/index";
 
 test("Test test", async () => {
   const fn = main();
-  console.dir(await fn());
+  const spec = await fn();
+  console.dir(JSON.stringify(spec));
 
   expect(true).toEqual(true);
 });

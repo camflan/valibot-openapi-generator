@@ -1,10 +1,14 @@
-import type { Context, Env, Input } from "hono";
-import type { BlankInput } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { ALLOWED_METHODS } from "./helper";
 
 export type HasUndefined<T> = undefined extends T ? true : false;
 export type PromiseOr<T> = T | Promise<T>;
+
+export interface RouterRoute {
+  path: string;
+  method: string;
+  // handler: H;
+}
 
 export type OpenAPIRouteHandlerConfig = {
   version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
@@ -27,18 +31,16 @@ export type HandlerResponse = {
   metadata?: Record<string, unknown>;
 };
 
-export type DescribeRouteOptions<
-  E extends Env = Env,
-  P extends string = string,
-  I extends Input = BlankInput,
-> = Omit<
+export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
   "responses" | "requestBody" | "parameters"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
-  hide?: boolean | ((c: Context<E, P, I>) => boolean);
+  hide?: boolean;
+
+  method: OpenAPIRoute["method"] | "ALL";
 
   /**
    * Validate response of the route

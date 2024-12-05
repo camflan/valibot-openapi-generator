@@ -1,22 +1,18 @@
-import type { Context, Env, Hono, Input, Schema } from "hono";
-import type { BlankSchema } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
 import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
+import type { DescribedRoute } from "./route";
 import type {
   HandlerResponse,
   OpenAPIRoute,
   OpenAPIRouteHandlerConfig,
   OpenApiSpecsOptions,
 } from "./types";
-import { uniqueSymbol } from "./utils";
 
-export function openAPISpecs<
-  E extends Env = Env,
-  P extends string = string,
-  I extends Input = Input,
-  S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
+const DEFAULT_TITLE = "Valibot schema documentation";
+const DEFAULT_DESCRIPTION = "Development documentation";
+
+export function openAPISpecs(
+  routes: DescribedRoute[],
   {
     documentation = {},
     excludeStaticFile = true,
@@ -39,28 +35,25 @@ export function openAPISpecs<
 
   let specs: OpenAPIV3.Document | null = null;
 
-  return async (c: Context<E, P, I>) => {
-    if (specs) return c.json(specs);
-
-    for (const route of hono.routes) {
-      // Finding routes with uniqueSymbol
-      // if (!(uniqueSymbol in route.handler)) continue;
-
+  return async () => {
+    for await (const route of routes) {
       // Exclude methods
-      if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
+      if ((excludeMethods as ReadonlyArray<string>).includes(route.method)) {
+        console.log(`Excluding [${route.method}]: ${route.path}`);
         continue;
+      }
 
       // Include only allowed methods
       if (
         (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
           false &&
         route.method !== "ALL"
-      )
+      ) {
+        console.log(`Excluding [${route.method}]: ${route.path}`);
         continue;
+      }
 
-      // const { resolver, metadata = {} } = route.handler[uniqueSymbol] as HandlerResponse;
-      const { resolver, metadata = {} } = route.handler as HandlerResponse;
-
+      const { resolver, metadata = {} } = route as HandlerResponse;
       const { docs, components } = await resolver({ ...config, ...metadata });
 
       config.components = {
@@ -90,13 +83,7 @@ export function openAPISpecs<
     // Hide routes
     for (const path in schema) {
       for (const method in schema[path]) {
-        // @ts-expect-error
-        const valueOrFunc = schema[path][method]?.hide;
-        if (
-          valueOrFunc &&
-          (typeof valueOrFunc === "boolean" ? valueOrFunc : valueOrFunc(c))
-        ) {
-          // @ts-expect-error
+        if (schema[path][method]?.hide) {
           delete schema[path][method];
         }
       }
@@ -110,8 +97,8 @@ export function openAPISpecs<
           (tag) => !excludeTags?.includes(tag?.name),
         ),
         info: {
-          title: "Hono Documentation",
-          description: "Development documentation",
+          title: DEFAULT_TITLE,
+          description: DEFAULT_DESCRIPTION,
           version: "0.0.0",
           ...documentation.info,
         },
