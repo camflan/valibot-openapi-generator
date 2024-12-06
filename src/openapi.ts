@@ -1,5 +1,6 @@
 import type { OpenAPIV3 } from "openapi-types";
 
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper.ts";
 import type { DescribedRoute } from "./route.ts";
 import type {
@@ -110,9 +111,10 @@ export async function getOpenAPISpecs(
         }),
         ...documentation.paths,
       },
-      tags: documentation.tags?.filter(
-        (tag) => !excludeTags?.includes(tag?.name),
-      ),
+      tags:
+        documentation.tags?.filter(
+          (tag) => !excludeTags?.includes(tag?.name),
+        ) ?? [],
     },
   } satisfies OpenAPIV3.Document;
 }

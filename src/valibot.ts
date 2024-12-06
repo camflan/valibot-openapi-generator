@@ -1,6 +1,7 @@
 import { toJsonSchema } from "@valibot/to-json-schema";
 import { type BaseIssue, type BaseSchema, parseAsync } from "valibot";
 
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { convert } from "./toOpenAPISchema/index.ts";
 import type { ResolverResult } from "./types.ts";
 

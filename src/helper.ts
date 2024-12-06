@@ -47,6 +47,8 @@ export function filterPaths(
   const newPaths: OpenAPIV3.PathsObject = {};
 
   for (const [key, value] of Object.entries(paths)) {
+    if (!value) continue;
+
     if (
       !exclude.some((x) => {
         if (typeof x === "string") return key === x;

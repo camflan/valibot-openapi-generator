@@ -7,6 +7,7 @@ import type {
 import { Walker } from "json-schema-walker";
 import type { OpenAPIV3 } from "openapi-types";
 
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { allowedKeywords } from "./constants.ts";
 import type { Options, SchemaType, SchemaTypeKeys } from "./types.ts";
 
@@ -25,12 +26,14 @@ export async function convert<T extends object = JSONSchema4>(
   const walker = new Walker<T>();
   const convertDefs = options?.convertUnreferencedDefinitions ?? true;
   await walker.loadSchema(schema, options);
-  await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
+  await walker.walk(convertSchema, walker.vocabularies.DRAFT_07!);
   // if we want to convert unreferenced definitions, we need to do it iteratively here
   const rootSchema = walker.rootSchema as unknown as JSONSchema;
   if (convertDefs && rootSchema?.definitions) {
     for (const defName in rootSchema.definitions) {
       const def = rootSchema.definitions[defName];
+      if (!def) continue;
+
       rootSchema.definitions[defName] = await handleDefinition(def, schema);
     }
   }
@@ -96,7 +99,7 @@ async function handleDefinition<T extends JSONSchema4 = JSONSchema4>(
         },
       },
     );
-    await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
+    await walker.walk(convertSchema, walker.vocabularies.DRAFT_07!);
     if ("definitions" in walker.rootSchema) {
       walker.rootSchema.definitions = undefined;
     }
@@ -209,10 +212,8 @@ function convertIllegalKeywordsAsExtensions(schema: SchemaType) {
       !allowedKeywords.includes(keyword)
     ) {
       const key = `${oasExtensionPrefix}${keyword}` as keyof SchemaType;
-      // @ts-expect-error: PRs welcome to tidy up these types
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       schema[key] = schema[keyword];
-      // @ts-expect-error: PRs welcome to tidy up these types
       schema[keyword] = undefined;
     }
   }

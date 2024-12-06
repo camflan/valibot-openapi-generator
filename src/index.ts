@@ -1,7 +1,10 @@
 import * as v from "valibot";
 
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { getOpenAPISpecs } from "./openapi.ts";
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { describeRoute } from "./route.ts";
+// @ts-expect-error: JSR requires that we have .ts extensions
 import { resolver } from "./valibot.ts";
 
 export function main() {

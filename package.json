@@ -5,8 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "remove-unused:check": "npx @line/ts-remove-unused --check",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc --noEmit"
   },
   "author": "",
   "license": "ISC",

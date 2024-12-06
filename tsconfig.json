@@ -19,7 +19,8 @@
         "noUncheckedIndexedAccess": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "strictNullChecks": true
     },
     "include": [
         "src"

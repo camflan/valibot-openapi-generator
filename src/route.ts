@@ -28,7 +28,9 @@ export function describeRoute(
       if (docs.responses) {
         for (const key of Object.keys(docs.responses)) {
           const response = docs.responses[key];
-          if (response && !("content" in response)) continue;
+
+          if (!response) continue;
+          if (!("content" in response)) continue;
 
           for (const [, raw] of Object.entries(
             "content" in response ? response.content : {},
