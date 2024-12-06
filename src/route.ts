@@ -1,7 +1,11 @@
+import { isOfKind } from "valibot";
+
 import type {
   DescribeRouteOptions,
   OpenAPIRouteHandlerConfig,
 } from "./types.ts";
+// @ts-expect-error: JSR requires that we have .ts extensions
+import { resolver } from "./valibot.ts";
 
 export type DescribedRoute = {
   metadata: Record<string, string>;
@@ -37,8 +41,13 @@ export function describeRoute(
           )) {
             if (!raw) continue;
 
-            if (raw.schema && "builder" in raw.schema) {
-              const result = await raw.schema.builder(config);
+            if (
+              raw.schema &&
+              "kind" in raw.schema &&
+              isOfKind("schema", raw.schema)
+            ) {
+              const { builder } = resolver(raw.schema);
+              const result = await builder(config);
 
               raw.schema = result.schema;
 

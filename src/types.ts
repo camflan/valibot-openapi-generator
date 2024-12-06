@@ -1,4 +1,5 @@
 import type { OpenAPIV3 } from "openapi-types";
+import { AnySchema } from "valibot";
 
 import type { AllowedMethod } from "./helper.ts";
 
@@ -23,6 +24,7 @@ export type DescribeRouteOptions = Omit<
           content?: {
             [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
               schema?:
+                | AnySchema
                 | OpenAPIV3.ReferenceObject
                 | OpenAPIV3.SchemaObject
                 | ResolverResult;
@@ -82,7 +84,7 @@ export type OpenApiSpecsOptions = {
   /**
    * Exclude methods from Open API
    */
-  excludeMethods?: AllowedMethod[number][];
+  excludeMethods?: AllowedMethod[];
 
   /**
    * Determine if Swagger should exclude static files.
