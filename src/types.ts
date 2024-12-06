@@ -3,6 +3,18 @@ import { AnySchema } from "valibot";
 
 import type { AllowedMethod } from "./helper.ts";
 
+export type ContentWithSchema = {
+  content?: {
+    [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+      schema?:
+        | AnySchema
+        | OpenAPIV3.ReferenceObject
+        | OpenAPIV3.SchemaObject
+        | ResolverResult;
+    };
+  };
+};
+
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
   "parameters" | "requestBody" | "responses"
@@ -15,22 +27,19 @@ export type DescribeRouteOptions = Omit<
   method: "ALL" | OpenAPIRoute["method"];
 
   /**
+   * Request body
+   */
+  requestBody?:
+    | (ContentWithSchema & OpenAPIV3.RequestBodyObject)
+    | OpenAPIV3.ReferenceObject;
+
+  /**
    * Responses of the request
    */
   responses?: {
     [key: string]:
-      | OpenAPIV3.ReferenceObject
-      | (OpenAPIV3.ResponseObject & {
-          content?: {
-            [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
-              schema?:
-                | AnySchema
-                | OpenAPIV3.ReferenceObject
-                | OpenAPIV3.SchemaObject
-                | ResolverResult;
-            };
-          };
-        });
+      | (ContentWithSchema & OpenAPIV3.ResponseObject)
+      | OpenAPIV3.ReferenceObject;
   };
 
   /**
@@ -39,6 +48,7 @@ export type DescribeRouteOptions = Omit<
    */
   validateResponse?: boolean;
 };
+
 export type HandlerResponse = {
   metadata?: Record<string, unknown>;
   resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{

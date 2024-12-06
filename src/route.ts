@@ -1,6 +1,8 @@
+import { OpenAPIV3 } from "openapi-types";
 import { isOfKind } from "valibot";
 
 import type {
+  ContentWithSchema,
   DescribeRouteOptions,
   OpenAPIRouteHandlerConfig,
 } from "./types.ts";
@@ -17,6 +19,11 @@ export type DescribedRoute = {
   }>;
 };
 
+type HandleSchemaOptions = {
+  components: Record<string, unknown>;
+  config: OpenAPIRouteHandlerConfig;
+};
+
 export function describeRoute(
   path: string,
   { method, ...specs }: DescribeRouteOptions,
@@ -27,42 +34,50 @@ export function describeRoute(
     path,
     async resolver(config: OpenAPIRouteHandlerConfig) {
       const docs = { ...specs };
-      let components = {};
+      const components = {};
+
+      if (docs.requestBody) {
+        await handleSchema(docs.requestBody, { components, config });
+      }
 
       if (docs.responses) {
         for (const key of Object.keys(docs.responses)) {
           const response = docs.responses[key];
 
-          if (!response) continue;
-          if (!("content" in response)) continue;
-
-          for (const [, raw] of Object.entries(
-            "content" in response ? response.content : {},
-          )) {
-            if (!raw) continue;
-
-            if (
-              raw.schema &&
-              "kind" in raw.schema &&
-              isOfKind("schema", raw.schema)
-            ) {
-              const { builder } = resolver(raw.schema);
-              const result = await builder(config);
-
-              raw.schema = result.schema;
-
-              if (result.components) {
-                components = {
-                  ...components,
-                  ...result.components,
-                };
-              }
-            }
-          }
+          await handleSchema(response, {
+            components,
+            config,
+          });
         }
       }
 
       return { components, docs };
     },
   };
+}
+
+async function handleSchema<T extends ContentWithSchema>(
+  doc: OpenAPIV3.ReferenceObject | T | undefined,
+  { components, config }: HandleSchemaOptions,
+) {
+  if (!doc) return;
+  if (!("content" in doc)) return;
+
+  for (const [, raw] of Object.entries("content" in doc ? doc.content : {})) {
+    if (!raw) continue;
+
+    if (raw.schema && "kind" in raw.schema && isOfKind("schema", raw.schema)) {
+      const { builder } = resolver(raw.schema);
+      const result = await builder(config);
+
+      raw.schema = result.schema;
+
+      if (result.components) {
+        components = {
+          ...components,
+          ...result.components,
+        };
+      }
+    }
+  }
 }
