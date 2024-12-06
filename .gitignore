@@ -130,5 +130,5 @@ dist
 .pnp.*
 
 
-index.ts
+src/index.ts
 tests/
