@@ -4,7 +4,8 @@ Uses Valibot schemas to generate Open API documentation
 
 ## Install
 
-Install from JSR,
+Install from JSR,  
+
     npx jsr add @camflan/valibot-openapi-generator
 
 ## Status
