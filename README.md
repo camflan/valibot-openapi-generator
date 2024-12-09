@@ -2,6 +2,11 @@
 
 Uses Valibot schemas to generate Open API documentation
 
+## Install
+
+Install from JSR,
+    npx jsr add @camflan/valibot-openapi-generator
+
 ## Status
 
 This is being used in production but needs a lot of help to become as powerful as it can be. Please PR any help, especially around some of the ignored type errors
