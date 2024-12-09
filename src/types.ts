@@ -17,7 +17,7 @@ export type ContentWithSchema = {
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
-  "parameters" | "requestBody" | "responses"
+  "requestBody" | "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
