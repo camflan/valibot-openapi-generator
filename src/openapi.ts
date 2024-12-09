@@ -13,7 +13,7 @@ import type {
 const DEFAULT_TITLE = "Valibot schema documentation";
 const DEFAULT_DESCRIPTION = "Development documentation";
 
-/** getOpenAPISpecs
+/**
  * Combines DescribedRoutes into a single OpenAPI document.
  *
  * @returns OpenAPIV3.Document

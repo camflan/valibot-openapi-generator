@@ -1,6 +1,6 @@
 {
   "name": "valibot-openapi-generator",
-  "version": "2024.12.13",
+  "version": "2024.12.14",
   "description": "",
   "type": "module",
   "sideEffects": false,

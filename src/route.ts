@@ -24,7 +24,7 @@ type HandleSchemaOptions = {
   config: OpenAPIRouteHandlerConfig;
 };
 
-/** describeRoute
+/**
  * Creates a route description that will be used by getOpenAPISpecs to combine
  * into a single OpenAPI spec document.
  *
