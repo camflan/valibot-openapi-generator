@@ -16,6 +16,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - run: npm ci --include=dev
 
       - name: Publish package
         run: npx jsr publish
