@@ -95,9 +95,9 @@ const openApiSpec = getOpenAPISpecs(
 
 <details>
   <summary>JSON output for the above example</summary>
-</details>
-    ```json
-    {
+
+```json
+{
   "openapi": "3.1.0",
   "info": {
     "description": "Development documentation",
@@ -182,5 +182,7 @@ const openApiSpec = getOpenAPISpecs(
   },
   "tags": []
 }
-    ```
+```
+
+
 </details>
