@@ -4,7 +4,7 @@ Uses Valibot schemas to generate Open API documentation
 
 ## Install
 
-Install from JSR,  
+Install from JSR,
 
     npx jsr add @camflan/valibot-openapi-generator
 
@@ -93,9 +93,11 @@ const openApiSpec = getOpenAPISpecs(
 );
 ```
 
+![Example output in an OpenAPI explorer](./docs/example-output.png)
+
 <details>
   <summary>JSON output for the above example</summary>
-
+</details>
 ```json
 {
   "openapi": "3.1.0",
@@ -183,6 +185,5 @@ const openApiSpec = getOpenAPISpecs(
   "tags": []
 }
 ```
-
 
 </details>
