@@ -15,7 +15,7 @@ on:
       - main
 
 jobs:
-  create-release:
+  publish:
     runs-on: ubuntu-latest
 
     permissions:
@@ -63,6 +63,8 @@ jobs:
           make_latest: true
           prerelease: false
           tag_name: ${{ steps.calendar-version.outputs.new-tag }}
+
+      - run: npm ci --include=dev
 
       - name: Publish package
         run: npx jsr publish
