@@ -1,6 +1,6 @@
 {
   "name": "valibot-openapi-generator",
-  "version": "2024.12.15",
+  "version": "2024.12.16",
   "description": "",
   "type": "module",
   "sideEffects": false,
@@ -10,12 +10,8 @@
   "author": "",
   "license": "ISC",
   "exports": {
-    ".": {
-      "default": "./mod.ts",
-      "types": "./src/types.ts"
-    }
+    ".": "./mod.ts"
   },
-  "types": "./src/types.ts",
   "peerDependencies": {
     "valibot": "^0.31.0"
   },

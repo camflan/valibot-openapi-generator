@@ -23,6 +23,7 @@
         "strictNullChecks": true
     },
     "include": [
-        "src"
+        "./mod.ts",
+        "./src"
     ],
 }
