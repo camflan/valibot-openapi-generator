@@ -50,21 +50,12 @@ jobs:
           message: Version bump
           tag: ${{ steps.calendar-version.new_tag }}
 
-      - name: Generate Release Notes
-        id: notes
-        uses: RedCrafter07/release-notes-action@v1
-        with:
-          tag-name: ${{ steps.calendar-version.new_tag }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create Release
         id: create_release
-        uses: actions/create-release@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2.2.1
         with:
-          tag_name: ${{ steps.calendar-version.new_tag }}
-          release_name: Release ${{ steps.calendar-version.new_tag }}
-          body: ${{ steps.notes.outputs.release-notes }}
           draft: false
+          generate_release_notes: true
+          make_latest: true
           prerelease: false
+          tag_name: ${{ steps.calendar-version.new_tag }}
