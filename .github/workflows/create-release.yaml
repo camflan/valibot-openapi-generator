@@ -28,19 +28,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           create_tag: false
-          tag_prefix: v
+          tag_prefix: v20
 
       - name: Update jsr.json version
         uses: restackio/update-json-file-action@2.1
         with:
           file: package.json
-          fields: '{"version": "${{ steps.calendar-version.new_version }}"}'
+          fields: '{"version": "20${{ steps.calendar-version.new_version }}"}'
 
       - name: Update package.json version
         uses: restackio/update-json-file-action@2.1
         with:
           file: package.json
-          fields: '{"version": "${{ steps.calendar-version.new_version }}"}'
+          fields: '{"version": "20${{ steps.calendar-version.new_version }}"}'
 
       - name: commit changes
         uses: EndBug/add-and-commit@v9
