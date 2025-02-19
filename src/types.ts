@@ -16,6 +16,7 @@ export type ContentWithSchema = {
   };
 };
 
+/** Configuration for generating documentation from a route spec */
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
   "requestBody" | "responses"
