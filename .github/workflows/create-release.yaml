@@ -1,0 +1,70 @@
+---
+name: Create release
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Calendar Version
+        uses: egoodhall/calver@v1.1.1
+        id: calendar-version
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          create_tag: false
+          tag_prefix: v
+
+      - name: Update jsr.json version
+        uses: restackio/update-json-file-action@2.1
+        with:
+          file: package.json
+          fields: '{"version": "${{ steps.calendar-version.new_version }}"}'
+
+      - name: Update package.json version
+        uses: restackio/update-json-file-action@2.1
+        with:
+          file: package.json
+          fields: '{"version": "${{ steps.calendar-version.new_version }}"}'
+
+      - name: commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: jsr.json package.json
+          default_author: github_actions
+          fetch: false
+          message: Version bump
+          tag: ${{ steps.calendar-version.new_tag }}
+
+      - name: Generate Release Notes
+        id: notes
+        uses: RedCrafter07/release-notes-action@v1
+        with:
+          tag-name: ${{ steps.calendar-version.new_tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.calendar-version.new_tag }}
+          release_name: Release ${{ steps.calendar-version.new_tag }}
+          body: ${{ steps.notes.outputs.release-notes }}
+          draft: false
+          prerelease: false
