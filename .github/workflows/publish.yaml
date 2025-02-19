@@ -1,22 +1,27 @@
 ---
 name: Publish
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+  id-token: write
+
 on:
   release:
-    types: [published]
+    types: [prereleased, released]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
+
       - run: npm ci --include=dev
 
       - name: Publish package
