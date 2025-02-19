@@ -31,17 +31,13 @@ export type DescribeRouteOptions = Omit<
   /**
    * Request body
    */
-  requestBody?:
-    | (ContentWithSchema & OpenAPIV3.RequestBodyObject)
-    | OpenAPIV3.ReferenceObject;
+  requestBody?: EnhancedRequestObject | OpenAPIV3.ReferenceObject;
 
   /**
    * Responses of the request
    */
   responses?: {
-    [key: string]:
-      | (ContentWithSchema & OpenAPIV3.ResponseObject)
-      | OpenAPIV3.ReferenceObject;
+    [key: string]: EnhancedResponseObject | OpenAPIV3.ReferenceObject;
   };
 
   /**
@@ -50,6 +46,14 @@ export type DescribeRouteOptions = Omit<
    */
   validateResponse?: boolean;
 };
+
+/** OpenAPIV3 Request object that supports valibot schema */
+export type EnhancedRequestObject = ContentWithSchema &
+  OpenAPIV3.RequestBodyObject;
+
+/** OpenAPIV3 Response object that supports valibot schema */
+export type EnhancedResponseObject = ContentWithSchema &
+  OpenAPIV3.ResponseObject;
 
 export type HandlerResponse = {
   metadata?: Record<string, unknown>;
