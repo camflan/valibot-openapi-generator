@@ -1,6 +1,6 @@
 {
   "name": "@camflan/valibot-openapi-generator",
-  "version": "2024.12.14",
+  "version": "2024.12.15",
   "exports": {
     ".": "./mod.ts"
   }
