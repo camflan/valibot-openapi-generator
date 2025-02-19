@@ -27,8 +27,7 @@ jobs:
         id: calendar-version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          create_tag: false
-          tag_prefix: v
+          tag-prefix: v
 
       - name: Update jsr.json version
         uses: restackio/update-json-file-action@2.1
