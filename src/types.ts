@@ -3,6 +3,7 @@ import { AnySchema } from "valibot";
 
 import type { AllowedMethod } from "./helper.ts";
 
+/** Enhanced OpenAPI response container, allows passing Valibot schemas as the schema value */
 export type ContentWithSchema = {
   content?: {
     [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
