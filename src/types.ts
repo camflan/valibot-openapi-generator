@@ -3,19 +3,6 @@ import { AnySchema } from "valibot";
 
 import type { AllowedMethod } from "./helper.ts";
 
-/** Enhanced OpenAPI response container, allows passing Valibot schemas as the schema value */
-export type ContentWithSchema = {
-  content?: {
-    [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
-      schema?:
-        | AnySchema
-        | OpenAPIV3.ReferenceObject
-        | OpenAPIV3.SchemaObject
-        | ResolverResult;
-    };
-  };
-};
-
 /** Configuration for generating documentation from a route spec */
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
@@ -47,13 +34,31 @@ export type DescribeRouteOptions = Omit<
   validateResponse?: boolean;
 };
 
+/** Enhanced OpenAPI response container, allows passing Valibot schemas as the schema value */
+export type EnhancedContentData = {
+  content?: {
+    [media: string]: EnhancedMediaTypeObject | OpenAPIV3.MediaTypeObject;
+  };
+};
+
+export type EnhancedMediaTypeObject = Omit<
+  OpenAPIV3.MediaTypeObject,
+  "schema"
+> & {
+  schema?:
+    | AnySchema
+    | OpenAPIV3.ReferenceObject
+    | OpenAPIV3.SchemaObject
+    | ResolverResult;
+};
+
 /** OpenAPIV3 Request object that supports valibot schema */
-export type EnhancedRequestObject = ContentWithSchema &
+export type EnhancedRequestObject = EnhancedContentData &
   OpenAPIV3.RequestBodyObject;
 
 /** OpenAPIV3 Response object that supports valibot schema */
-export type EnhancedResponseObject = ContentWithSchema &
-  OpenAPIV3.ResponseObject;
+export type EnhancedResponseObject = EnhancedContentData &
+  Omit<OpenAPIV3.ResponseObject, "content">;
 
 export type HandlerResponse = {
   metadata?: Record<string, unknown>;
@@ -66,9 +71,7 @@ export type HandlerResponse = {
 export type HasUndefined<T> = undefined extends T ? true : false;
 
 export interface OpenAPIRoute {
-  data:
-    | DescribeRouteOptions
-    | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
+  data: OpenAPIV3.OperationObject;
   method: AllowedMethod;
   path: string;
 }

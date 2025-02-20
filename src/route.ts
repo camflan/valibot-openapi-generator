@@ -2,8 +2,8 @@ import { OpenAPIV3 } from "openapi-types";
 import { isOfKind } from "valibot";
 
 import type {
-  ContentWithSchema,
   DescribeRouteOptions,
+  EnhancedContentData,
   OpenAPIRouteHandlerConfig,
 } from "./types.ts";
 // @ts-expect-error: JSR requires that we have .ts extensions
@@ -62,7 +62,7 @@ export function describeRoute(
   };
 }
 
-async function handleSchema<T extends ContentWithSchema>(
+async function handleSchema<T extends EnhancedContentData>(
   doc: OpenAPIV3.ReferenceObject | T | undefined,
   { components, config }: HandleSchemaOptions,
 ) {

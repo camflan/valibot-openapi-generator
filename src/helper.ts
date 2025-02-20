@@ -61,7 +61,7 @@ export function filterPaths(
       for (const method of Object.keys(value)) {
         const schema = value[method as keyof typeof value];
 
-        if (typeof schema === "string") {
+        if (!schema || typeof schema === "string" || Array.isArray(schema)) {
           console.error("invalid schema type?", schema);
           continue;
         }
@@ -69,37 +69,37 @@ export function filterPaths(
         // TODO: Do we need to support this?
         // If so we need to resolve types
         //
-        //   if (key.includes("{")) {
-        //     if (!schema.parameters) {
-        //       schema.parameters = [];
-        //     }
-        //
-        //     schema.parameters = [
-        //       ...key
-        //         .split("/")
-        //         .filter(
-        //           (x) =>
-        //             x.startsWith("{") &&
-        //             !schema.parameters.find(
-        //               (params: Record<string, unknown>) =>
-        //                 params["in"] === "path" &&
-        //                 params["name"] === x.slice(1, x.length - 1),
-        //             ),
-        //         )
-        //         .map((x) => ({
-        //           in: "path",
-        //           name: x.slice(1, x.length - 1),
-        //           required: true,
-        //           schema: { type: "string" },
-        //         })),
-        //       ...schema.parameters,
-        //     ];
-        //   }
-        //
-        //   if (!schema.responses)
-        //     schema.responses = {
-        //       200: {},
-        //     };
+        if (key.includes("{")) {
+          if (!("parameters" in schema) || !schema.parameters) {
+            schema.parameters = [];
+          }
+
+          schema.parameters = [
+            ...key
+              .split("/")
+              .filter(
+                (x) =>
+                  x.startsWith("{") &&
+                  !schema.parameters?.find(
+                    (params) =>
+                      params["in"] === "path" &&
+                      params["name"] === x.slice(1, x.length - 1),
+                  ),
+              )
+              .map((x) => ({
+                in: "path",
+                name: x.slice(1, x.length - 1),
+                required: true,
+                schema: { type: "string" as const },
+              })),
+            ...schema.parameters,
+          ];
+        }
+
+        if (!schema.responses)
+          schema.responses = {
+            200: { description: "" },
+          };
       }
 
       newPaths[key] = value;
@@ -139,7 +139,6 @@ export function registerSchemaPath({
   schema[path] = {
     ...(schema[path] ? schema[path] : {}),
     [method]: {
-      responses: {},
       ...(schema[path]?.[method] ?? {}),
       operationId: generateOperationId(method, path),
       ...data,
