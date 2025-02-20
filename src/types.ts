@@ -1,5 +1,5 @@
 import type { OpenAPIV3 } from "openapi-types";
-import { AnySchema } from "valibot";
+import { BaseIssue, BaseSchema } from "valibot";
 
 import type { AllowedMethod } from "./helper.ts";
 
@@ -46,7 +46,7 @@ export type EnhancedMediaTypeObject = Omit<
   "schema"
 > & {
   schema?:
-    | AnySchema
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
     | OpenAPIV3.ReferenceObject
     | OpenAPIV3.SchemaObject
     | ResolverResult;

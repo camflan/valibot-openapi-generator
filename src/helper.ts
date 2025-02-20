@@ -66,9 +66,6 @@ export function filterPaths(
           continue;
         }
 
-        // TODO: Do we need to support this?
-        // If so we need to resolve types
-        //
         if (key.includes("{")) {
           if (!("parameters" in schema) || !schema.parameters) {
             schema.parameters = [];
